@@ -112,5 +112,10 @@ helpers.sendTwilioSms = function(phone, msg, callback) {
   }
 }
 
+helpers.stringValidation = (name) => typeof (name) == 'string' && name.trim().length > 0;
+helpers.emailValidation = (email) => typeof (email) == 'string' && (/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(email));
+helpers.passwordValidation = (password) => typeof (password) == 'string' && password.trim().length > 7;
+helpers.booleanValidation = (boolean) => typeof (boolean) == 'boolean' && boolean === true;
+
 //Export the module
 module.exports = helpers;

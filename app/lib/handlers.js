@@ -24,19 +24,19 @@ handlers.users = function(data, callback) {
 handlers._users = {};
 
 // Users - post
-// Required data: firstName, lastName, phone, password, tosAgreement
+// Required data: name, address, email, password, tosAgreement
 // Optional data: none
 handlers._users.post = function(data, callback) {
   // Check that all required fields are filled out
-  const firstName = typeof (data.payload.firstName) == 'string' && data.payload.firstName.trim().length > 0 ? data.payload.firstName.trim() : false;
-  const lastName = typeof (data.payload.lastName) == 'string' && data.payload.lastName.trim().length > 0 ? data.payload.lastName.trim() : false;
-  const phone = typeof (data.payload.phone) == 'string' && data.payload.phone.trim().length === 9 ? data.payload.phone.trim() : false;
-  const password = typeof (data.payload.password) == 'string' && data.payload.password.trim().length > 7 ? data.payload.password.trim() : false;
-  const tosAgreement = typeof (data.payload.tosAgreement) == 'boolean' && data.payload.tosAgreement === true;
+  const name = helpers.stringValidation(data.payload.name) ? data.payload.name.trim() : false;
+  const address = helpers.stringValidation(data.payload.address) ? data.payload.address.trim() : false;
+  const email = helpers.emailValidation(data.payload.email) ? data.payload.email.trim() : false;
+  const password = helpers.passwordValidation(data.payload.password) ? data.payload.password.trim() : false;
+  const tosAgreement = helpers.booleanValidation(data.payload.tosAgreement);
 
-  if (firstName && lastName && phone && password && tosAgreement) {
+  if (name && address && email && password && tosAgreement) {
     // Make sure that the user doesn't exist
-    _data.read('users', phone, function(err) {
+    _data.read('users', email, function(err) {
       if (err) {
         // Hash the password
         const hashedPassword = helpers.hash(password);
@@ -45,15 +45,15 @@ handlers._users.post = function(data, callback) {
 
           // Create the user object
           const userObject = {
-            'firstName': firstName,
-            'lastName': lastName,
-            'phone': phone,
-            'hashedPassword': hashedPassword,
+            name,
+            address,
+            email,
+            hashedPassword,
             'tosAgreement': true
           };
 
           // Store the user
-          _data.create('users', phone, userObject, function(err) {
+          _data.create('users', email, userObject, function(err) {
             if (!err) {
               callback(200);
             } else {
@@ -65,7 +65,7 @@ handlers._users.post = function(data, callback) {
           callback(500, {'Error': 'Could not hash the user\'s password'});
         }
       } else {
-        // User (phone number) already exist
+        // User (email) already exist
         callback(400, {'Error:': 'A user with that phone number already exist'});
       }
     });
@@ -75,21 +75,21 @@ handlers._users.post = function(data, callback) {
 }
 
 // Users - get
-// Required data: phone
+// Required data: email
 // Optional data: none
 handlers._users.get = function(data, callback) {
 
   // Check that the phone number is valid
-  const phone = typeof (data.queryStringObject.phone) == 'string' && data.queryStringObject.phone.trim().length === 9 ? data.queryStringObject.phone.trim() : false;
-  if (phone) {
+  const email = helpers.emailValidation(data.queryStringObject.email) ? data.queryStringObject.email.trim() : false;
 
+  if (email) {
     // get the token from the headers
     const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
 
     // Verify that the given token is valid for the phone number
-    handlers._tokens.verifyToken(token, phone, function(tokenIsValid) {
+    handlers._tokens.verifyToken(token, email, function(tokenIsValid) {
       if (tokenIsValid) {
-        _data.read('users', phone, function(err, data) {
+        _data.read('users', email, function(err, data) {
           if (!err && data) {
             // Remove the hashed password from the user object before running it to the requester
             delete data.hashedPassword;
@@ -108,11 +108,11 @@ handlers._users.get = function(data, callback) {
 }
 
 // Users - put
-// Required data : phone
-// Optional data: firstName, lastName, password (at least one must be specified)
+// Required data : email
+// Optional data: name, address, password (at least one must be specified)
 handlers._users.put = function(data, callback) {
   // Check for the required field
-  const phone = typeof (data.payload.phone) == 'string' && data.payload.phone.trim().length === 9 ? data.payload.phone.trim() : false;
+  const email = typeof (data.payload.phone) == 'string' && data.payload.phone.trim().length === 9 ? data.payload.phone.trim() : false;
 
   // Check for the optional fields
   const firstName = typeof (data.payload.firstName) == 'string' && data.payload.firstName.trim().length > 0 ? data.payload.firstName.trim() : false;
@@ -244,15 +244,15 @@ handlers.tokens = function(data, callback) {
 handlers._tokens = {};
 
 // Tokens - post
-// Required data: phone, password
+// Required data: email, password
 // Optional data: none
 handlers._tokens.post = function(data, callback) {
-  const phone = typeof (data.payload.phone) == 'string' && data.payload.phone.trim().length === 9 ? data.payload.phone.trim() : false;
-  const password = typeof (data.payload.password) == 'string' && data.payload.password.trim().length > 7 ? data.payload.password.trim() : false;
+  const email = helpers.emailValidation(data.payload.email) ? data.payload.email.trim() : false;
+  const password = helpers.passwordValidation(data.payload.password) ? data.payload.password.trim() : false;
 
-  if (phone && password) {
+  if (email && password) {
     // Lookup the user who matches that phone number
-    _data.read('users', phone, function(err, userData) {
+    _data.read('users', email, function(err, userData) {
       if (!err && userData) {
         // Hash the sent password, and compare it to the password stored in the user object
         const hashedPassword = helpers.hash(password);
@@ -262,7 +262,7 @@ handlers._tokens.post = function(data, callback) {
 
           const expires = Date.now() + 1000 * 60 * 60;
           const tokenObject = {
-            'phone': phone,
+            'email': email,
             'id': tokenId,
             'expires': expires,
           };
@@ -369,12 +369,12 @@ handlers._tokens.delete = function(data, callback) {
 }
 
 // Verify if a given token id is currently valid for a given user
-handlers._tokens.verifyToken = function(id, phone, callback) {
+handlers._tokens.verifyToken = function(id, email, callback) {
   // Lookup the token
   _data.read('tokens', id, function(err, tokenData) {
     if (!err && tokenData) {
       // Check that the token is for the given user and has not expired
-      if (tokenData.phone === phone && tokenData.expires > Date.now()) {
+      if (tokenData.email === email && tokenData.expires > Date.now()) {
         callback(true);
       } else {
         callback(false);
