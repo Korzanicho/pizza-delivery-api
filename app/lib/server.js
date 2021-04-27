@@ -1,22 +1,18 @@
 /**
  * Server related tasks
  */
-
-// Dependencies
-var http = require('http');
-var https = require('https');
-var url = require('url');
-var StringDecoder = require('string_decoder').StringDecoder;
-var config = require('./config');
-var fs = require('fs');
-var handlers = require('./handlers');
-var helpers = require('./helpers');
-var path = require('path');
-var util = require('util');
-var debug = util.debuglog('server');
+const http = require('http');
+const https = require('https');
+const url = require('url');
+const StringDecoder = require('string_decoder').StringDecoder;
+const config = require('./config');
+const fs = require('fs');
+const handlers = require('./handlers');
+const helpers = require('./helpers');
+const path = require('path');
 
 // Instantiate the server module object
-var server = {};
+const server = {};
 
 // Instantiate the HTTP server
 server.httpServer = http.createServer(function (req, res) {
@@ -36,24 +32,24 @@ server.httpsServer = https.createServer(server.httpsServerOptions, function (req
 server.undefinedServer = function (res, req) {
 
   // Get the URL and parse it
-  var parsedUrl = url.parse(req.url, true);
+  const parsedUrl = url.parse(req.url, true);
 
   // Get the path
-  var path = parsedUrl.pathname;
-  var trimmedPath = path.replace(/^\/+|\/+$/g, '');
+  const path = parsedUrl.pathname;
+  const trimmedPath = path.replace(/^\/+|\/+$/g, '');
 
   // Get the query string as an object
-  var queryStringObject = parsedUrl.query;
+  const queryStringObject = parsedUrl.query;
 
   // Get the HTTP Method
-  var method = req.method.toLowerCase();
+  const method = req.method.toLowerCase();
 
   // Get the headers as an object
-  var headers = req.headers;
+  const headers = req.headers;
 
   // Get the payload, if any
-  var decoder = new StringDecoder('utf-8');
-  var buffer = '';
+  const decoder = new StringDecoder('utf-8');
+  let buffer = '';
   req.on('data', function (data) {
     buffer += decoder.write(data);
   })
@@ -61,10 +57,10 @@ server.undefinedServer = function (res, req) {
     buffer += decoder.end();
 
     // Choose the handler this request  should go to. If one is not found, use the notFound handler.
-    var chosenHandler = typeof (server.router[trimmedPath]) !== 'undefined' ? server.router[trimmedPath] : handlers.notFound;
+    const chosenHandler = typeof (server.router[trimmedPath]) !== 'undefined' ? server.router[trimmedPath] : handlers.notFound;
 
     // Construct the data object to send to the handler
-    var data = {
+    const data = {
       'trimmedPath': trimmedPath,
       'queryStringObject': queryStringObject,
       'method': method,
@@ -80,7 +76,7 @@ server.undefinedServer = function (res, req) {
       payload = typeof (payload) == 'object' ? payload : {};
 
       // Convert the payload to a string
-      var payloadString = JSON.stringify(payload);
+      const payloadString = JSON.stringify(payload);
 
       // Return the response
       res.setHeader('Content-Type', 'application/json');
@@ -88,7 +84,7 @@ server.undefinedServer = function (res, req) {
       res.end(payloadString);
 
       // If the response is 200, print green otherwise print red
-      if (statusCode == 200) {
+      if (statusCode === 200) {
         console.log('\x1b[32m%s\x1b[0m', method.toUpperCase() + ' /'+trimmedPath+' '+statusCode);
       } else {
         console.log('\x1b[31m%s\x1b[0m', method.toUpperCase() + ' /'+trimmedPath+' '+statusCode);

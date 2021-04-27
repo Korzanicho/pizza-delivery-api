@@ -3,28 +3,28 @@
 */
 
 // Dependencies
-var fs = require('fs');
-var path = require('path');
-var helpers = require('./helpers');
+const fs = require('fs');
+const path = require('path');
+const helpers = require('./helpers');
 
 // Container for the module (to be exported)
-var lib = {};
+const lib = {};
 
 // Base directory of the data folder
 lib.baseDir = path.join(__dirname, '/.././.data/');
 
 // Write data to a file
-lib.create = function(dir, file, data, callback) {
+lib.create = (dir, file, data, callback) => {
   // Open the file for writing
-  fs.open(lib.baseDir + dir + '/' + file + '.json', 'wx', function(err, fileDescriptor) {
+  fs.open(lib.baseDir + dir + '/' + file + '.json', 'wx', (err, fileDescriptor) => {
     if (!err && fileDescriptor) {
       // Convert data to string
-      var stringData = JSON.stringify(data);
+      const stringData = JSON.stringify(data);
 
       // Write to file and close it
-      fs.writeFile(fileDescriptor, stringData, function(err) {
+      fs.writeFile(fileDescriptor, stringData, (err) => {
         if (!err) {
-          fs.close(fileDescriptor, function(err) {
+          fs.close(fileDescriptor, (err) => {
             if (!err) {
               callback(false);
             } else {
@@ -43,10 +43,10 @@ lib.create = function(dir, file, data, callback) {
 };
 
 // Read data from a file
-lib.read = function(dir, file, callback) {
-  fs.readFile(lib.baseDir + dir + '/' + file + '.json', 'utf-8', function(err, data) {
+lib.read = (dir, file, callback) => {
+  fs.readFile(lib.baseDir + dir + '/' + file + '.json', 'utf-8', (err, data) => {
     if (!err && data) {
-      var parsedData = helpers.parseJsonToObject(data);
+      const parsedData = helpers.parseJsonToObject(data);
       callback(false, parsedData);
     } else {
       callback(err, data);
@@ -55,20 +55,20 @@ lib.read = function(dir, file, callback) {
 }
 
 // Update data inside a  file
-lib.update = function(dir, file, data, callback) {
+lib.update = (dir, file, data, callback) => {
   // Open the file for writing
-  fs.open(lib.baseDir + dir + '/' + file + '.json', 'r+', function(err, fileDescriptor) {
+  fs.open(lib.baseDir + dir + '/' + file + '.json', 'r+', (err, fileDescriptor) => {
     if (!err && fileDescriptor) {
       // Convert data to string
-      var stringData = JSON.stringify(data);
+      const stringData = JSON.stringify(data);
 
       // Truncate the file
-      fs.ftruncate(fileDescriptor, function(err) {
+      fs.ftruncate(fileDescriptor, (err) => {
         if (!err) {
           // Write to the file and close it
-          fs.writeFile(fileDescriptor, stringData, function(err) {
+          fs.writeFile(fileDescriptor, stringData, (err) => {
             if (!err) {
-              fs.close(fileDescriptor, function(err) {
+              fs.close(fileDescriptor, (err) => {
                 if (!err) {
                   callback(false);
                 } else {
@@ -90,9 +90,9 @@ lib.update = function(dir, file, data, callback) {
 }
 
 // Delete a file
-lib.delete = function(dir, file, callback) {
+lib.delete = (dir, file, callback) => {
   // Unlink the file
-  fs.unlink(lib.baseDir + dir + '/' + file + '.json', function(err) {
+  fs.unlink(lib.baseDir + dir + '/' + file + '.json', (err) => {
     if (!err) {
       callback(false);
     } else {
@@ -102,11 +102,11 @@ lib.delete = function(dir, file, callback) {
 }
 
 // List all the items in a directory
-lib.list = function(dir, callback) {
-  fs.readdir(lib.baseDir+dir+'/', function(err, data) {
+lib.list = (dir, callback) => {
+  fs.readdir(lib.baseDir+dir+'/', (err, data) => {
     if (!err && data && data.length >0) {
-      var trimmedFileNames = [];
-      data.forEach(function(fileName) {
+      const trimmedFileNames = [];
+      data.forEach((fileName) => {
         trimmedFileNames.push(fileName.replace('.json', ''));
       });
       callback(false, trimmedFileNames);

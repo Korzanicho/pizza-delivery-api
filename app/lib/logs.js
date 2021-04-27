@@ -3,12 +3,12 @@
 */
 
 // Dependencies
-var fs = require('fs');
-var path = require('path');
-var zlib = require('zlib');
+const fs = require('fs');
+const path = require('path');
+const zlib = require('zlib');
 
 // Container for module
-var lib = {}
+const lib = {};
 
 // Base directory of the logs folder
 lib.baseDir = path.join(__dirname, '/../.logs/');
@@ -42,7 +42,7 @@ lib.append = function (file, str, callback) {
 lib.list = function (includeCompressedLogs, callback) {
   fs.readdir(lib.baseDir, function (err, data) {
     if (!err && data && data.length > 0) {
-      var trimmedFileNames = [];
+      const trimmedFileNames = [];
       data.forEach(function (fileName) {
         // Add the .log files
         if (fileName.indexOf('.log') > -1) {
@@ -64,8 +64,8 @@ lib.list = function (includeCompressedLogs, callback) {
 
 // Compress the contents of one .log file into .gz.b64 file within the same directory
 lib.compress = function (logId, newFileId, callback) {
-  var sourceFile = logId+'.log';
-  var destFile = newFileId+'.gz.b64';
+  const sourceFile = logId + '.log';
+  const destFile = newFileId + '.gz.b64';
 
   // Read the source file
   fs.readFile(lib.baseDir+sourceFile, 'utf-8', function (err, inputString) {
@@ -105,17 +105,16 @@ lib.compress = function (logId, newFileId, callback) {
   });
 };
 
-// Descompress the contents of a .gz.b64 file into a string variable
+// Decompress the contents of a .gz.b64 file into a string variable
 lib.decompress = function (fileId, callback) {
-  var fileName = fileId+'.gz.b64';
+  const fileName = fileId + '.gz.b64';
   fs.readFile(lib.baseDir+fileName, 'utf-8', function (err, str) {
     if (!err && str) {
       // Decompress the data
-      var inputBuffer = Buffer.from(str, 'base64');
       zlib.unzip(unzipBuffer, function (err, outputBuffer) {
         if (!err && outputBuffer) {
           // Callback
-          var str = outputBuffer.toString();
+          const str = outputBuffer.toString();
           callback(false, str);
         } else {
           callback(err);

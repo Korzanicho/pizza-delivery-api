@@ -3,16 +3,16 @@
 */
 
 // Dependencies
-var _data = require('./data');
-var helpers = require('./helpers');
-var config = require('./config');
+const _data = require('./data');
+const helpers = require('./helpers');
+const config = require('./config');
 
 // Define the handlers
-var handlers = {};
+const handlers = {};
 
 // Users
 handlers.users = function(data, callback) {
-  var acceptableMethods = ['post', 'get', 'put', 'delete'];
+  const acceptableMethods = ['post', 'get', 'put', 'delete'];
   if (acceptableMethods.indexOf(data.method) > -1) {
     handlers._users[data.method](data, callback);
   } else {
@@ -20,7 +20,7 @@ handlers.users = function(data, callback) {
   }
 };
 
-// Container for the users submethods
+// Container for the users sub methods
 handlers._users = {};
 
 // Users - post
@@ -28,30 +28,30 @@ handlers._users = {};
 // Optional data: none
 handlers._users.post = function(data, callback) {
   // Check that all required fields are filled out
-  var firstName = typeof(data.payload.firstName) == 'string' && data.payload.firstName.trim().length > 0 ? data.payload.firstName.trim() : false;
-  var lastName = typeof(data.payload.lastName) == 'string' && data.payload.lastName.trim().length > 0 ? data.payload.lastName.trim() : false;
-  var phone = typeof(data.payload.phone) == 'string' && data.payload.phone.trim().length == 9 ? data.payload.phone.trim() : false;
-  var password = typeof(data.payload.password) == 'string' && data.payload.password.trim().length > 7 ? data.payload.password.trim() : false;
-  var tosAgreement = typeof(data.payload.tosAgreement) == 'boolean' && data.payload.tosAgreement == true ? true : false;
+  const firstName = typeof (data.payload.firstName) == 'string' && data.payload.firstName.trim().length > 0 ? data.payload.firstName.trim() : false;
+  const lastName = typeof (data.payload.lastName) == 'string' && data.payload.lastName.trim().length > 0 ? data.payload.lastName.trim() : false;
+  const phone = typeof (data.payload.phone) == 'string' && data.payload.phone.trim().length === 9 ? data.payload.phone.trim() : false;
+  const password = typeof (data.payload.password) == 'string' && data.payload.password.trim().length > 7 ? data.payload.password.trim() : false;
+  const tosAgreement = typeof (data.payload.tosAgreement) == 'boolean' && data.payload.tosAgreement === true;
 
   if (firstName && lastName && phone && password && tosAgreement) {
     // Make sure that the user doesn't exist
-    _data.read('users', phone, function(err, data) {
+    _data.read('users', phone, function(err) {
       if (err) {
         // Hash the password
-        var hashedPassword = helpers.hash(password);
+        const hashedPassword = helpers.hash(password);
 
         if (hashedPassword) {
 
           // Create the user object
-          var userObject = {
+          const userObject = {
             'firstName': firstName,
             'lastName': lastName,
             'phone': phone,
             'hashedPassword': hashedPassword,
             'tosAgreement': true
-          }
-  
+          };
+
           // Store the user
           _data.create('users', phone, userObject, function(err) {
             if (!err) {
@@ -75,23 +75,23 @@ handlers._users.post = function(data, callback) {
 }
 
 // Users - get
-// Reguired data: phone
+// Required data: phone
 // Optional data: none
 handlers._users.get = function(data, callback) {
 
   // Check that the phone number is valid
-  var phone = typeof(data.queryStringObject.phone) == 'string' && data.queryStringObject.phone.trim().length == 9 ? data.queryStringObject.phone.trim() : false;
+  const phone = typeof (data.queryStringObject.phone) == 'string' && data.queryStringObject.phone.trim().length === 9 ? data.queryStringObject.phone.trim() : false;
   if (phone) {
 
     // get the token from the headers
-    var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
+    const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
 
     // Verify that the given token is valid for the phone number
     handlers._tokens.verifyToken(token, phone, function(tokenIsValid) {
       if (tokenIsValid) {
         _data.read('users', phone, function(err, data) {
           if (!err && data) {
-            // Remove the hashed password from the user object before runing it to the requester
+            // Remove the hashed password from the user object before running it to the requester
             delete data.hashedPassword;
             callback(200, data);
           } else {
@@ -112,19 +112,19 @@ handlers._users.get = function(data, callback) {
 // Optional data: firstName, lastName, password (at least one must be specified)
 handlers._users.put = function(data, callback) {
   // Check for the required field
-  var phone = typeof(data.payload.phone) == 'string' && data.payload.phone.trim().length == 9 ? data.payload.phone.trim() : false;
+  const phone = typeof (data.payload.phone) == 'string' && data.payload.phone.trim().length === 9 ? data.payload.phone.trim() : false;
 
   // Check for the optional fields
-  var firstName = typeof(data.payload.firstName) == 'string' && data.payload.firstName.trim().length > 0 ? data.payload.firstName.trim() : false;
-  var lastName = typeof(data.payload.lastName) == 'string' && data.payload.lastName.trim().length > 0 ? data.payload.lastName.trim() : false;
-  var password = typeof(data.payload.password) == 'string' && data.payload.password.trim().length > 7 ? data.payload.password.trim() : false;
+  const firstName = typeof (data.payload.firstName) == 'string' && data.payload.firstName.trim().length > 0 ? data.payload.firstName.trim() : false;
+  const lastName = typeof (data.payload.lastName) == 'string' && data.payload.lastName.trim().length > 0 ? data.payload.lastName.trim() : false;
+  const password = typeof (data.payload.password) == 'string' && data.payload.password.trim().length > 7 ? data.payload.password.trim() : false;
 
   // Error if the phone is invalid
   if (phone) {
     if (firstName || lastName || password) {
 
       // get the token from the headers
-      var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
+      const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
 
       // Verify that the given token is valid for the phone number
       handlers._tokens.verifyToken(token, phone, function(tokenIsValid) {
@@ -149,7 +149,7 @@ handlers._users.put = function(data, callback) {
                   callback(290);
                 } else {
                   console.log(err);
-                  callback(500, {'Error': 'Coud not update the user'});
+                  callback(500, {'Error': 'Could not update the user'});
                 }
               })
             } else {
@@ -173,10 +173,10 @@ handlers._users.put = function(data, callback) {
 // Required field: phone
 handlers._users.delete = function(data, callback) {
   // Check that the phone number is valid
-  var phone = typeof(data.queryStringObject.phone) == 'string' && data.queryStringObject.phone.trim().length == 9 ? data.queryStringObject.phone.trim() : false;
+  const phone = typeof (data.queryStringObject.phone) == 'string' && data.queryStringObject.phone.trim().length === 9 ? data.queryStringObject.phone.trim() : false;
   if (phone) {
     // get the token from the headers
-    var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
+    const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
 
     // Verify that the given token is valid for the phone number
     handlers._tokens.verifyToken(token, phone, function(tokenIsValid) {
@@ -187,12 +187,12 @@ handlers._users.delete = function(data, callback) {
             _data.delete('users', phone, function(err) {
               if (!err) {
                 // Delete each of the check associated with the user
-                var userChecks = typeof(userData.checks) == 'object' && userData.checks instanceof Array ? userData.checks : [];
-                var checksToDelete = userChecks.length;
+                const userChecks = typeof (userData.checks) == 'object' && userData.checks instanceof Array ? userData.checks : [];
+                const checksToDelete = userChecks.length;
 
                 if (checksToDelete > 0) {
-                  var checksDeleted = 0;
-                  var delitionErrors = false;
+                  let checksDeleted = 0;
+                  let delitionErrors = false;
                   // Loop through the checks
                   userChecks.forEach(checkId => {
                     // Delete the check
@@ -201,11 +201,11 @@ handlers._users.delete = function(data, callback) {
                         delitionErrors = true;
                       }
                       checksDeleted++;
-                      if (checksDeleted == checksToDelete) {
+                      if (checksDeleted === checksToDelete) {
                         if (!delitionErrors) {
                           callback(200);
                         } else {
-                          callback(500, {'Error': 'Errors encountered while attempting to delete all of the user\'s checks. All checks may not have been deleted from the system cuccessfuly'})
+                          callback(500, {'Error': 'Errors encountered while attempting to delete all of the user\'s checks. All checks may not have been deleted from the system successfully'})
                         }
                       }
                     });
@@ -232,7 +232,7 @@ handlers._users.delete = function(data, callback) {
 
 // Tokens
 handlers.tokens = function(data, callback) {
-  var acceptableMethods = ['post', 'get', 'put', 'delete'];
+  const acceptableMethods = ['post', 'get', 'put', 'delete'];
   if (acceptableMethods.indexOf(data.method) > -1) {
     handlers._tokens[data.method](data, callback);
   } else {
@@ -247,25 +247,25 @@ handlers._tokens = {};
 // Required data: phone, password
 // Optional data: none
 handlers._tokens.post = function(data, callback) {
-  var phone = typeof(data.payload.phone) == 'string' && data.payload.phone.trim().length == 9 ? data.payload.phone.trim() : false;
-  var password = typeof(data.payload.password) == 'string' && data.payload.password.trim().length > 7 ? data.payload.password.trim() : false;
+  const phone = typeof (data.payload.phone) == 'string' && data.payload.phone.trim().length === 9 ? data.payload.phone.trim() : false;
+  const password = typeof (data.payload.password) == 'string' && data.payload.password.trim().length > 7 ? data.payload.password.trim() : false;
 
   if (phone && password) {
     // Lookup the user who matches that phone number
     _data.read('users', phone, function(err, userData) {
       if (!err && userData) {
         // Hash the sent password, and compare it to the password stored in the user object
-        var hashedPassword = helpers.hash(password);
-        if (hashedPassword == userData.hashedPassword) {
+        const hashedPassword = helpers.hash(password);
+        if (hashedPassword === userData.hashedPassword) {
           // If valid, create a new token with a random name. Set expiration date 1 hour in the future
-          var tokenId = helpers.createRandomString(20);
+          const tokenId = helpers.createRandomString(20);
 
-          var expires = Date.now() + 1000 * 60 * 60;
-          var tokenObject = {
+          const expires = Date.now() + 1000 * 60 * 60;
+          const tokenObject = {
             'phone': phone,
             'id': tokenId,
             'expires': expires,
-          }
+          };
 
           // Store the token
           _data.create('tokens', tokenId, tokenObject, function(err) {
@@ -292,7 +292,7 @@ handlers._tokens.post = function(data, callback) {
 // Optional data: none
 handlers._tokens.get = function(data, callback) {
   // Check that the id is valid
-  var id = typeof(data.queryStringObject.id) == 'string' && data.queryStringObject.id.trim().length == 20 ? data.queryStringObject.id.trim() : false;
+  const id = typeof (data.queryStringObject.id) == 'string' && data.queryStringObject.id.trim().length === 20 ? data.queryStringObject.id.trim() : false;
   if (id) {
     // Lookup the token
     _data.read('tokens', id, function(err, tokenData) {
@@ -311,10 +311,10 @@ handlers._tokens.get = function(data, callback) {
 // Required data: id, extend
 // Optional data: none
 handlers._tokens.put = function(data, callback) {
-  var id = typeof(data.payload.id) == 'string' && data.payload.id.trim().length == 20 ? data.payload.id.trim() : false;
-  var extend = typeof(data.payload.extend) == 'boolean' && data.payload.extend == true ? true : false;
+  const id = typeof (data.payload.id) == 'string' && data.payload.id.trim().length === 20 ? data.payload.id.trim() : false;
+  const extend = typeof (data.payload.extend) == 'boolean' && data.payload.extend === true;
   if (id && extend) {
-    // lOOKUP THE TOKEN
+    // LOOKUP THE TOKEN
     _data.read('tokens', id, function(err, tokenData) {
       if (!err && tokenData) {
         // Check to the make sure the token isn't already expired
@@ -348,7 +348,7 @@ handlers._tokens.put = function(data, callback) {
 // Optional data: none
 handlers._tokens.delete = function(data, callback) {
   // Check that the id is valid
-  var id = typeof(data.queryStringObject.id) == 'string' && data.queryStringObject.id.trim().length == 20 ? data.queryStringObject.id.trim() : false;
+  const id = typeof (data.queryStringObject.id) == 'string' && data.queryStringObject.id.trim().length === 20 ? data.queryStringObject.id.trim() : false;
   if (id) {
     _data.read('tokens', id, function(err, data) {
       if (!err && data) {
@@ -374,7 +374,7 @@ handlers._tokens.verifyToken = function(id, phone, callback) {
   _data.read('tokens', id, function(err, tokenData) {
     if (!err && tokenData) {
       // Check that the token is for the given user and has not expired
-      if (tokenData.phone == phone && tokenData.expires > Date.now()) {
+      if (tokenData.phone === phone && tokenData.expires > Date.now()) {
         callback(true);
       } else {
         callback(false);
@@ -387,7 +387,7 @@ handlers._tokens.verifyToken = function(id, phone, callback) {
 
 // Checks
 handlers.checks = function(data, callback) {
-  var acceptableMethods = ['post', 'get', 'put', 'delete'];
+  const acceptableMethods = ['post', 'get', 'put', 'delete'];
   if (acceptableMethods.indexOf(data.method) > -1) {
     handlers._checks[data.method](data, callback);
   } else {
@@ -404,32 +404,32 @@ handlers._checks = {};
 
 handlers._checks.post = function(data, callback) {
   // Validate inputs
-  var protocol = typeof(data.payload.protocol) == 'string' && ['https', 'http'].indexOf(data.payload.protocol) > -1 ? data.payload.protocol : false;
-  var url = typeof(data.payload.url) == 'string' && data.payload.url.trim().length > 0 ? data.payload.url.trim() : false;
-  var method = typeof(data.payload.method) == 'string' && ['post', 'get', 'put', 'delete'].indexOf(data.payload.method) > -1 ? data.payload.method : false;
-  var successCodes = typeof(data.payload.successCodes) == 'object' && data.payload.successCodes instanceof Array && data.payload.successCodes.length > 0 ? data.payload.successCodes : false;
-  var timeoutSeconds = typeof(data.payload.timeoutSeconds) == 'number' && data.payload.timeoutSeconds % 1 === 0 && data.payload.timeoutSeconds >= 1 && data.payload.timeoutSeconds <= 5 ? data.payload.timeoutSeconds : false;
+  const protocol = typeof (data.payload.protocol) == 'string' && ['https', 'http'].indexOf(data.payload.protocol) > -1 ? data.payload.protocol : false;
+  const url = typeof (data.payload.url) == 'string' && data.payload.url.trim().length > 0 ? data.payload.url.trim() : false;
+  const method = typeof (data.payload.method) == 'string' && ['post', 'get', 'put', 'delete'].indexOf(data.payload.method) > -1 ? data.payload.method : false;
+  const successCodes = typeof (data.payload.successCodes) == 'object' && data.payload.successCodes instanceof Array && data.payload.successCodes.length > 0 ? data.payload.successCodes : false;
+  const timeoutSeconds = typeof (data.payload.timeoutSeconds) == 'number' && data.payload.timeoutSeconds % 1 === 0 && data.payload.timeoutSeconds >= 1 && data.payload.timeoutSeconds <= 5 ? data.payload.timeoutSeconds : false;
 
   if (protocol && url && method && successCodes && timeoutSeconds) {
     // Get the token from the headers
-    var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
+    const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
 
     // Lookup the user by reading the token
     _data.read('tokens', token, function(err, tokenData) {
       if (!err && tokenData) {
-        var userPhone = tokenData.phone;
+        const userPhone = tokenData.phone;
 
         // Lookup the user data
         _data.read('users', userPhone, function(err, userData) {
           if (!err && userData) {
-            var userChecks = typeof(userData.checks) == 'object' && userData.checks instanceof Array ? userData.checks : [];
+            const userChecks = typeof (userData.checks) == 'object' && userData.checks instanceof Array ? userData.checks : [];
             // Verify that the user has less than the number of max-checks-per-user
             if (userChecks.length < config.maxChecks) {
               // Create a random id for the check
-              var checkId = helpers.createRandomString(20);
+              const checkId = helpers.createRandomString(20);
 
               // Create the check object, and include the user's phone
-              var checkObject = {
+              const checkObject = {
                 'id': checkId,
                 'userPhone': userPhone,
                 'protocol': protocol,
@@ -481,13 +481,13 @@ handlers._checks.post = function(data, callback) {
 handlers._checks.get = function(data, callback) {
 
   // Check that the id is valid
-  var id = typeof(data.queryStringObject.id) == 'string' && data.queryStringObject.id.trim().length == 20 ? data.queryStringObject.id.trim() : false;
+  const id = typeof (data.queryStringObject.id) == 'string' && data.queryStringObject.id.trim().length === 20 ? data.queryStringObject.id.trim() : false;
   if (id) {
     // Lookup the check
     _data.read('checks', id, function(err, checkData) {
       if (!err && checkData) {
         // get the token from the headers
-        var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
+        const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
 
         // Verify that the given token is valid and belongs to the user who created the check
         handlers._tokens.verifyToken(token, checkData.userPhone, function(tokenIsValid) {
@@ -513,15 +513,15 @@ handlers._checks.get = function(data, callback) {
 // Optional data: protocol, url, method, successCodes, timeoutSeconds (one must be sent)
 handlers._checks.put = function(data, callback) {
   // Check for the required field
-  var id = typeof(data.payload.id) == 'string' && data.payload.id.trim().length == 20 ? data.payload.id.trim() : false;
+  const id = typeof (data.payload.id) == 'string' && data.payload.id.trim().length === 20 ? data.payload.id.trim() : false;
 
   // Check for the optional fields
-  var protocol = typeof(data.payload.protocol) == 'string' && ['https', 'http'].indexOf(data.payload.protocol) > -1 ? data.payload.protocol : false;
-  var url = typeof(data.payload.url) == 'string' && data.payload.url.trim().length > 0 ? data.payload.url.trim() : false;
-  var method = typeof(data.payload.method) == 'string' && ['post', 'get', 'put', 'delete'].indexOf(data.payload.method) > -1 ? data.payload.method : false;
-  var successCodes = typeof(data.payload.successCodes) == 'object' && data.payload.successCodes instanceof Array && data.payload.successCodes.length > 0 ? data.payload.successCodes : false;
-  var timeoutSeconds = typeof(data.payload.timeoutSeconds) == 'number' && data.payload.timeoutSeconds % 1 === 0 && data.payload.timeoutSeconds >= 1 && data.payload.timeoutSeconds <= 5 ? data.payload.timeoutSeconds : false;
-  
+  const protocol = typeof (data.payload.protocol) == 'string' && ['https', 'http'].indexOf(data.payload.protocol) > -1 ? data.payload.protocol : false;
+  const url = typeof (data.payload.url) == 'string' && data.payload.url.trim().length > 0 ? data.payload.url.trim() : false;
+  const method = typeof (data.payload.method) == 'string' && ['post', 'get', 'put', 'delete'].indexOf(data.payload.method) > -1 ? data.payload.method : false;
+  const successCodes = typeof (data.payload.successCodes) == 'object' && data.payload.successCodes instanceof Array && data.payload.successCodes.length > 0 ? data.payload.successCodes : false;
+  const timeoutSeconds = typeof (data.payload.timeoutSeconds) == 'number' && data.payload.timeoutSeconds % 1 === 0 && data.payload.timeoutSeconds >= 1 && data.payload.timeoutSeconds <= 5 ? data.payload.timeoutSeconds : false;
+
   // Check to make sure id is valid
   if (id) {
      // Check to make sure one or more optional fields has been sent
@@ -530,7 +530,7 @@ handlers._checks.put = function(data, callback) {
       _data.read('checks', id, function(err, checkData) {
         if (!err && checkData) {
           // get the token from the headers
-          var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
+          const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
 
           // Verify that the given token is valid and belongs to the user who created the check
           handlers._tokens.verifyToken(token, checkData.userPhone, function(tokenIsValid) {
@@ -581,28 +581,28 @@ handlers._checks.put = function(data, callback) {
 // Optional data: none
 handlers._checks.delete = function(data, callback) {
   // Check that the id is valid
-  var id = typeof(data.queryStringObject.id) == 'string' && data.queryStringObject.id.trim().length == 20 ? data.queryStringObject.id.trim() : false;
+  const id = typeof (data.queryStringObject.id) == 'string' && data.queryStringObject.id.trim().length === 20 ? data.queryStringObject.id.trim() : false;
   if (id) {
 
     // Lookup the check
     _data.read('checks', id, function(err, checkData) {
       if (!err && checkData) {
         // get the token from the headers
-        var token = typeof(data.headers.token) == 'string' ? data.headers.token : false;
-    
+        const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
+
         // Verify that the given token is valid for the phone number
         handlers._tokens.verifyToken(token, checkData.userPhone, function(tokenIsValid) {
           if (tokenIsValid) {
-            // Delete thje check data
+            // Delete the check data
             _data.delete('checks', id, function(err) {
               if (!err) {
                 // Lookup the user
                 _data.read('users', checkData.userPhone, function(err, userData) {
                   if (!err && userData) {
-                    var userChecks = typeof(userData.checks) == 'object' && userData.checks instanceof Array ? userData.checks : [];
+                    const userChecks = typeof (userData.checks) == 'object' && userData.checks instanceof Array ? userData.checks : [];
 
                     // Remove the delete check from their list of checks
-                    var checkPosition = userChecks.indexOf(id);
+                    const checkPosition = userChecks.indexOf(id);
                     if (checkPosition > -1) {
                       userChecks.splice(checkPosition, 1);
 
