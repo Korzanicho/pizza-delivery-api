@@ -49,13 +49,19 @@ handlers._users.post = function(data, callback) {
             address,
             email,
             hashedPassword,
-            'tosAgreement': true
+            tosAgreement: true
           };
 
           // Store the user
           _data.create('users', email, userObject, function(err) {
             if (!err) {
-              callback(200);
+              _data.create('shoppingCarts', email, [], function(err) {
+                if (!err) {
+                  callback(200);
+                } else {
+                  callback(500, {'Error': 'Could not create the shopping cart'})
+                }
+              });
             } else {
               console.log(err);
               callback(500, {'Error': 'Could not create the new user'});
@@ -112,41 +118,41 @@ handlers._users.get = function(data, callback) {
 // Optional data: name, address, password (at least one must be specified)
 handlers._users.put = function(data, callback) {
   // Check for the required field
-  const email = typeof (data.payload.phone) == 'string' && data.payload.phone.trim().length === 9 ? data.payload.phone.trim() : false;
+  const email = helpers.emailValidation(data.payload.email) ? data.payload.email.trim() : false;
 
   // Check for the optional fields
-  const firstName = typeof (data.payload.firstName) == 'string' && data.payload.firstName.trim().length > 0 ? data.payload.firstName.trim() : false;
-  const lastName = typeof (data.payload.lastName) == 'string' && data.payload.lastName.trim().length > 0 ? data.payload.lastName.trim() : false;
-  const password = typeof (data.payload.password) == 'string' && data.payload.password.trim().length > 7 ? data.payload.password.trim() : false;
+  const name = helpers.stringValidation(data.payload.name) ? data.payload.name.trim() : false;
+  const address = helpers.stringValidation(data.payload.address) ? data.payload.address.trim() : false;
+  const password = helpers.passwordValidation(data.payload.password) ? data.payload.password.trim() : false;
 
-  // Error if the phone is invalid
-  if (phone) {
-    if (firstName || lastName || password) {
+  // Error if the email is invalid
+  if (email) {
+    if (name || address || password) {
 
       // get the token from the headers
       const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
 
       // Verify that the given token is valid for the phone number
-      handlers._tokens.verifyToken(token, phone, function(tokenIsValid) {
+      handlers._tokens.verifyToken(token, email, function(tokenIsValid) {
         if (tokenIsValid) {
           // Lookup the user
-          _data.read('users', phone, function(err, userData) {
+          _data.read('users', email, function(err, userData) {
             if (!err && userData) {
               // Update the fields necessary
-              if (firstName) {
-                userData.firstName = firstName;
+              if (name) {
+                userData.name = name;
               }
-              if (lastName) {
-                userData.lastName = lastName;
+              if (address) {
+                userData.address = address;
               }
               if (password) {
                 userData.hashedPassword = helpers.hash(password);
               }
     
               // Store the new updates
-              _data.update('users', phone, userData, function(err) {
+              _data.update('users', email, userData, function(err) {
                 if (!err) {
-                  callback(290);
+                  callback(200);
                 } else {
                   console.log(err);
                   callback(500, {'Error': 'Could not update the user'});
@@ -170,49 +176,30 @@ handlers._users.put = function(data, callback) {
 }
 
 // Users - delete
-// Required field: phone
+// Required field: email
 handlers._users.delete = function(data, callback) {
-  // Check that the phone number is valid
-  const phone = typeof (data.queryStringObject.phone) == 'string' && data.queryStringObject.phone.trim().length === 9 ? data.queryStringObject.phone.trim() : false;
-  if (phone) {
+  // Check that the email is valid
+  const email = helpers.emailValidation(data.queryStringObject.email) ? data.queryStringObject.email.trim() : false;
+  if (email) {
     // get the token from the headers
     const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
 
-    // Verify that the given token is valid for the phone number
-    handlers._tokens.verifyToken(token, phone, function(tokenIsValid) {
+    // Verify that the given token is valid for the email
+    handlers._tokens.verifyToken(token, email, function(tokenIsValid) {
       if (tokenIsValid) {
         // Lookup the user
-        _data.read('users', phone, function(err, userData) {
+        _data.read('users', email, function(err, userData) {
           if (!err && userData) {
-            _data.delete('users', phone, function(err) {
+            _data.delete('users', email, function(err) {
               if (!err) {
-                // Delete each of the check associated with the user
-                const userChecks = typeof (userData.checks) == 'object' && userData.checks instanceof Array ? userData.checks : [];
-                const checksToDelete = userChecks.length;
-
-                if (checksToDelete > 0) {
-                  let checksDeleted = 0;
-                  let delitionErrors = false;
-                  // Loop through the checks
-                  userChecks.forEach(checkId => {
-                    // Delete the check
-                    _data.delete('checks', checkId, function(err) {
-                      if (err) {
-                        delitionErrors = true;
-                      }
-                      checksDeleted++;
-                      if (checksDeleted === checksToDelete) {
-                        if (!delitionErrors) {
-                          callback(200);
-                        } else {
-                          callback(500, {'Error': 'Errors encountered while attempting to delete all of the user\'s checks. All checks may not have been deleted from the system successfully'})
-                        }
-                      }
-                    });
-                  });
-                } else {
-                  callback(200);
-                }
+                //Delete user shopping cart
+                _data.delete('shoppingCarts', email, function(err) {
+                  if (!err) {
+                    callback(200);
+                  } else {
+                    callback(500, {'Error': 'Could not delete the user shopping cart'});
+                  }
+                });
               } else {
                 callback(500, {'Error': 'Could not delete the specified user'});
               }
@@ -634,6 +621,94 @@ handlers._checks.delete = function(data, callback) {
       }
     });
 
+  } else {
+    callback(400, {'Error': 'Missing required field'});
+  }
+}
+
+// Menu
+handlers.menu = function(data, callback) {
+  const acceptableMethods = ['get'];
+  if (acceptableMethods.indexOf(data.method) > -1) {
+    handlers._menu[data.method](data, callback);
+  } else {
+    callback(405);
+  }
+};
+
+// Container for the menu sub methods
+handlers._menu = {};
+
+// Menu - get
+// Required data: email
+// Optional data: none
+handlers._menu.get = function(data, callback) {
+
+  // Check that the phone number is valid
+  const email = helpers.emailValidation(data.payload.email) ? data.payload.email.trim() : false;
+
+  if (email) {
+    // get the token from the headers
+    const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
+
+    // Verify that the given token is valid for the email
+    handlers._tokens.verifyToken(token, email, function(tokenIsValid) {
+      if (tokenIsValid) {
+        _data.read('menu', 'items', function(err, data) {
+          if (!err && data) {
+            callback(200, data);
+          } else {
+            callback(404);
+          }
+        });
+      } else {
+        callback(403, {'Error': 'Missing required token in header, or token is invalid'});
+      }
+    });
+  } else {
+    callback(400, {'Error': 'Missing required field'});
+  }
+}
+
+// Shopping cart
+handlers.shoppingCarts = function(data, callback) {
+  const acceptableMethods = ['get', 'put'];
+  if (acceptableMethods.indexOf(data.method) > -1) {
+    handlers._shoppingCarts[data.method](data, callback);
+  } else {
+    callback(405);
+  }
+};
+
+// Container for the shopping carts sub methods
+handlers._shoppingCarts = {};
+
+// shopping carts - get
+// Required data: email
+// Optional data: none
+handlers._shoppingCarts.get = function(data, callback) {
+
+  // Check that the phone number is valid
+  const email = helpers.emailValidation(data.payload.email) ? data.payload.email.trim() : false;
+
+  if (email) {
+    // get the token from the headers
+    const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
+
+    // Verify that the given token is valid for the email
+    handlers._tokens.verifyToken(token, email, function(tokenIsValid) {
+      if (tokenIsValid) {
+        _data.read('shoppingCarts', email, function(err, data) {
+          if (!err && data) {
+            callback(200, data);
+          } else {
+            callback(404);
+          }
+        });
+      } else {
+        callback(403, {'Error': 'Missing required token in header, or token is invalid'});
+      }
+    });
   } else {
     callback(400, {'Error': 'Missing required field'});
   }

@@ -99,7 +99,9 @@ server.router = {
   'ping': handlers.ping,
   'users': handlers.users,
   'tokens': handlers.tokens,
+  'menu': handlers.menu,
   'checks': handlers.checks,
+  'shoppingCarts': handlers.shoppingCarts,
 }
 
 // Init script
