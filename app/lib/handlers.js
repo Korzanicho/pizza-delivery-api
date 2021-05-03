@@ -689,7 +689,7 @@ handlers._shoppingCarts = {};
 handlers._shoppingCarts.get = function(data, callback) {
 
   // Check that the phone number is valid
-  const email = helpers.emailValidation(data.payload.email) ? data.payload.email.trim() : false;
+  const email = helpers.emailValidation(data.queryStringObject.email) ? data.queryStringObject.email.trim() : false;
 
   if (email) {
     // get the token from the headers
@@ -707,6 +707,49 @@ handlers._shoppingCarts.get = function(data, callback) {
         });
       } else {
         callback(403, {'Error': 'Missing required token in header, or token is invalid'});
+      }
+    });
+  } else {
+    callback(400, {'Error': 'Missing required field'});
+  }
+}
+
+// shoppingCarts - put
+// Required data: items, email
+// Optional data: none
+handlers._shoppingCarts.put = function(data, callback) {
+  // Check for the required field
+  let items = data.payload.items && data.payload.items.length > 0 ? data.payload.items : false;
+  const email = helpers.emailValidation(data.queryStringObject.email) ? data.queryStringObject.email.trim() : false;
+
+  // Check to make sure id is valid
+  if (items && email) {
+    // Lookup the check
+    _data.read('shoppingCarts', email, function(err, shoppingCart) {
+      if (!err && shoppingCart) {
+        // get the token from the headers
+        const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
+
+        // Verify that the given token is valid and belongs to the user who created the check
+        handlers._tokens.verifyToken(token, email, function(tokenIsValid) {
+          if (tokenIsValid) {
+            // Update the check where necessary
+            items = items.concat(shoppingCart);
+
+            // Store the new updates
+            _data.update('shoppingCarts', email, items, function(err) {
+              if (!err) {
+                callback(200);
+              } else {
+                callback(500, {'Error': 'Could not update the shopping cart'});
+              }
+            });
+          } else {
+            callback(403)
+          }
+        });
+      } else {
+        callback(400, {'Error': 'Check ID did not exist'});
       }
     });
   } else {
