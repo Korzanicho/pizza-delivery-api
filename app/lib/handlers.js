@@ -719,10 +719,11 @@ handlers._shoppingCarts.get = function(data, callback) {
 // Optional data: none
 handlers._shoppingCarts.put = function(data, callback) {
   // Check for the required field
+  console.log(data.payload);
   let items = data.payload.items && data.payload.items.length > 0 ? data.payload.items : false;
   const email = helpers.emailValidation(data.queryStringObject.email) ? data.queryStringObject.email.trim() : false;
 
-  // Check to make sure id is valid
+  // Check to make sure items is valid
   if (items && email) {
     // Lookup the check
     _data.read('shoppingCarts', email, function(err, shoppingCart) {
@@ -733,11 +734,18 @@ handlers._shoppingCarts.put = function(data, callback) {
         // Verify that the given token is valid and belongs to the user who created the check
         handlers._tokens.verifyToken(token, email, function(tokenIsValid) {
           if (tokenIsValid) {
-            // Update the check where necessary
-            items = items.concat(shoppingCart);
+            // Update the shopping cart where necessary
+            items.forEach(item => {
+              let index = shoppingCart.findIndex(oldItem => item.id == oldItem.id);
+              if (index > -1) {
+                shoppingCart[index].amount += item.amount;
+              } else {
+                shoppingCart.push(item);
+              }
+            });
 
             // Store the new updates
-            _data.update('shoppingCarts', email, items, function(err) {
+            _data.update('shoppingCarts', email, shoppingCart, function(err) {
               if (!err) {
                 callback(200);
               } else {
@@ -762,10 +770,10 @@ handlers._shoppingCarts.put = function(data, callback) {
 // Optional data: none
 handlers._shoppingCarts.delete = function(data, callback) {
   // Check for the required field
-  let items = data.payload.items && data.payload.items.length > 0 ? data.payload.items : false;
+  let item = data.payload.item ? data.payload.item : false;
   const email = helpers.emailValidation(data.queryStringObject.email) ? data.queryStringObject.email.trim() : false;
 
-  if (email && items) {
+  if (email && item) {
     // Lookup the check
     _data.read('shoppingCarts', email, function(err, shoppingCart) {
       if (!err && shoppingCart) {
@@ -774,17 +782,16 @@ handlers._shoppingCarts.delete = function(data, callback) {
 
         // Verify that the given token is valid for the phone number
         handlers._tokens.verifyToken(token, email, function(tokenIsValid) {
-          // get the token from the headers
-          const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
-
-          // Verify that the given token is valid and belongs to the user who created the check
-          handlers._tokens.verifyToken(token, email, function(tokenIsValid) {
-            if (tokenIsValid) {
-              // Update the check where necessary
-              items = shoppingCart.filter(el => !items.includes(el));
-
+          if (tokenIsValid) {
+            let index = shoppingCart.findIndex(oldItem => item == oldItem.id);
+            if (index > -1) {
+              if (shoppingCart[index].amount > 1) {
+                shoppingCart[index].amount = shoppingCart[index].amount - 1;
+              } else {
+                delete  shoppingCart[index];
+              }
               // Store the new updates
-              _data.update('shoppingCarts', email, items, function(err) {
+              _data.update('shoppingCarts', email, shoppingCart, function(err) {
                 if (!err) {
                   callback(200);
                 } else {
@@ -792,9 +799,11 @@ handlers._shoppingCarts.delete = function(data, callback) {
                 }
               });
             } else {
-              callback(403)
+              callback(403, {"Error": "Could not find item"});
             }
-          });
+          } else {
+            callback(403)
+          }
         });
       } else {
         callback(400, {'Error': 'The specified check ID does not exist'});
