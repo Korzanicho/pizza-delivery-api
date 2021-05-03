@@ -672,7 +672,7 @@ handlers._menu.get = function(data, callback) {
 
 // Shopping cart
 handlers.shoppingCarts = function(data, callback) {
-  const acceptableMethods = ['get', 'put'];
+  const acceptableMethods = ['get', 'put', 'delete'];
   if (acceptableMethods.indexOf(data.method) > -1) {
     handlers._shoppingCarts[data.method](data, callback);
   } else {
@@ -715,7 +715,7 @@ handlers._shoppingCarts.get = function(data, callback) {
 }
 
 // shoppingCarts - put
-// Required data: items, email
+// Required data: []items, email
 // Optional data: none
 handlers._shoppingCarts.put = function(data, callback) {
   // Check for the required field
@@ -749,9 +749,58 @@ handlers._shoppingCarts.put = function(data, callback) {
           }
         });
       } else {
-        callback(400, {'Error': 'Check ID did not exist'});
+        callback(400, {'Error': 'Could not find shopping cart'});
       }
     });
+  } else {
+    callback(400, {'Error': 'Missing required field'});
+  }
+}
+
+// shoppingCarts - delete
+// required data: email, []items
+// Optional data: none
+handlers._shoppingCarts.delete = function(data, callback) {
+  // Check for the required field
+  let items = data.payload.items && data.payload.items.length > 0 ? data.payload.items : false;
+  const email = helpers.emailValidation(data.queryStringObject.email) ? data.queryStringObject.email.trim() : false;
+
+  if (email && items) {
+    // Lookup the check
+    _data.read('shoppingCarts', email, function(err, shoppingCart) {
+      if (!err && shoppingCart) {
+        // get the token from the headers
+        const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
+
+        // Verify that the given token is valid for the phone number
+        handlers._tokens.verifyToken(token, email, function(tokenIsValid) {
+          // get the token from the headers
+          const token = typeof (data.headers.token) == 'string' ? data.headers.token : false;
+
+          // Verify that the given token is valid and belongs to the user who created the check
+          handlers._tokens.verifyToken(token, email, function(tokenIsValid) {
+            if (tokenIsValid) {
+              // Update the check where necessary
+              items = shoppingCart.filter(el => !items.includes(el));
+
+              // Store the new updates
+              _data.update('shoppingCarts', email, items, function(err) {
+                if (!err) {
+                  callback(200);
+                } else {
+                  callback(500, {'Error': 'Could not update the shopping cart'});
+                }
+              });
+            } else {
+              callback(403)
+            }
+          });
+        });
+      } else {
+        callback(400, {'Error': 'The specified check ID does not exist'});
+      }
+    });
+
   } else {
     callback(400, {'Error': 'Missing required field'});
   }
