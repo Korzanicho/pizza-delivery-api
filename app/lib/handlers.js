@@ -582,7 +582,7 @@ handlers._shoppingCarts.put = function(data, callback) {
 }
 
 // shoppingCarts - delete
-// required data: email, []items
+// required data: email, item
 // Optional data: none
 handlers._shoppingCarts.delete = function(data, callback) {
   // Check for the required field
