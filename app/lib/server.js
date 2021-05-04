@@ -102,6 +102,7 @@ server.router = {
   'menu': handlers.menu,
   'checks': handlers.checks,
   'shoppingCarts': handlers.shoppingCarts,
+  'purchases': handlers.purchases
 }
 
 // Init script
