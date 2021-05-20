@@ -7,6 +7,8 @@ const crypto = require('crypto');
 const config = require('./config');
 https = require('https');
 const querystring = require('querystring');
+var path = require('path');
+var fs = require('fs');
 
 // Container for all the helpers
 const helpers = {};
@@ -284,6 +286,24 @@ helpers.stringValidation = (name) => typeof (name) == 'string' && name.trim().le
 helpers.emailValidation = (email) => typeof (email) == 'string' && (/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(email));
 helpers.passwordValidation = (password) => typeof (password) == 'string' && password.trim().length > 7;
 helpers.booleanValidation = (boolean) => typeof (boolean) == 'boolean' && boolean === true;
+
+// Get the string content of a template
+helpers.getTemplate = function(templateName, callback) {
+  templateName = typeof(templateName) == 'string' && templateName.length > 0 ? templateName : false;
+
+  if (templateName) {
+    const templatesDir = path.join(__dirname, '../../platform/templates/');
+    fs.readFile(templatesDir + templateName + '.html', 'utf8', function(err, str) {
+      if (!err && str && str.length > 0) {
+        callback(false, str);
+      } else {
+        callback('No template could be found!');
+      }
+    });
+  } else {
+    callback('A valid template name was not specified');
+  }
+}
 
 //Export the module
 module.exports = helpers;

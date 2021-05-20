@@ -3,7 +3,7 @@ JSON RESTful API free of 3rd-party dependencies for a pizza-delivery company.
 
 # ROUTES
 
-## /users
+## api/users
 
 |Method|Header|Query params|Payload|Desc|
 |------|---------------|----------------|----------------|----------------|
@@ -12,7 +12,7 @@ JSON RESTful API free of 3rd-party dependencies for a pizza-delivery company.
 |`POST`  | | | `name` *, `address`\*, `email`\*, `password`\*, `tosAgreement`\*|Create a user account.|
 |`DELETE`|`token`* ||`email`* |Delete user's account.|
 
-## /tokens
+## api/tokens
 |Method|Header|Query params|Payload|Desc|
 |------|---------------|----------------|----------------|----------------|
 |`GET`   ||`id`\*||Get token's id and expiration date.|
@@ -20,20 +20,20 @@ JSON RESTful API free of 3rd-party dependencies for a pizza-delivery company.
 |`POST`  ||| `email`\*, `password`\* |Log in. Return a new, valid token for the user to use with other routes.|
 |`DELETE`||`id`\*||Log out.|
 
-## /menu
+## api/menu
 
 |Method|Header|Query params|Payload|Desc|
 |------|---------------|----------------|----------------|----------------|
 |`GET` |`token`*| `email`\*||Get menu as a JSON array of pizzas. |
 
-## /shoppingCarts
+## api/shoppingCarts
 |Method|Header|Query params|Payload|Desc|
 |------|---------------|----------------|----------------|----------------|
 |`GET`   |`token`\*|| `email`\*|Get full list of existing, unpurchased orders for the user.|
 |`PUT`   |`token`\* || `email`\*, `items` array of items*, eg. [{"id":1,"amount":2}]||
 |`DELETE`|`token`\* || `email`\*, `item` item id|Delete items from user's shopping cart.|
 
-## /purchases
+## api/purchases
 |Method|Header|Query params|Payload|Desc|
 |------|---------------|----------------|----------------|----------------|
 |`POST`  |`token`*||`email`| |

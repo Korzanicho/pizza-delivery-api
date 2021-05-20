@@ -69,17 +69,29 @@ server.undefinedServer = function (res, req) {
     };
 
     // Route the request to the handler specified in the router
-    chosenHandler(data, function (statusCode, payload) {
+    chosenHandler(data, function (statusCode, payload, contentType) {
+
+      // Determine the type of response (fallback to JSON)
+      contentType = typeof(contentType) == 'string' ? contentType : 'json';
+
       // Use the status code called back by handler, or default to 200
       statusCode = typeof (statusCode) == 'number' ? statusCode : 200;
-      // Use the payload called back by the handler, or default to an empty object
-      payload = typeof (payload) == 'object' ? payload : {};
+      
+      // Return the response parts that are content-specific
+      let payloadString = '';
+      
+      if (contentType == 'json') {
+        res.setHeader('Content-Type', 'application/json');
+        // Use the payload called back by the handler, or default to an empty object
+        payload = typeof (payload) == 'object' ? payload : {};
+        payloadString = JSON.stringify(payload);
+      }
+      if (contentType == 'html') {
+        res.setHeader('Content-Type', 'text/html');
+        payloadString = typeof(payload) == 'string' ? payload : '';
+      }
 
-      // Convert the payload to a string
-      const payloadString = JSON.stringify(payload);
-
-      // Return the response
-      res.setHeader('Content-Type', 'application/json');
+      // Return the respones-parts that are common to all content-types
       res.writeHead(statusCode);
       res.end(payloadString);
 
@@ -96,13 +108,21 @@ server.undefinedServer = function (res, req) {
 
 // Define a request router
 server.router = {
-  'ping': handlers.ping,
-  'users': handlers.users,
-  'tokens': handlers.tokens,
+  '': handlers.index,
+  'account/create': handlers.accountCreate,
+  'account/edit': handlers.accountEdit,
+  'account/deleted': handlers.accountDeleted,
+  'session/create': handlers.sessionCreate,
+  'session/deleted': handlers.sessionDeleted,
   'menu': handlers.menu,
-  'checks': handlers.checks,
-  'shoppingCarts': handlers.shoppingCarts,
-  'purchases': handlers.purchases
+
+  'ping': handlers.ping,
+  'api/users': handlers.users,
+  'api/tokens': handlers.tokens,
+  'api/menu': handlers.menu,
+  'api/checks': handlers.checks,
+  'api/shoppingCarts': handlers.shoppingCarts,
+  'api/purchases': handlers.purchases
 }
 
 // Init script
