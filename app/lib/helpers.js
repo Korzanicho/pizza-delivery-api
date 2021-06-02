@@ -288,14 +288,17 @@ helpers.passwordValidation = (password) => typeof (password) == 'string' && pass
 helpers.booleanValidation = (boolean) => typeof (boolean) == 'boolean' && boolean === true;
 
 // Get the string content of a template
-helpers.getTemplate = function(templateName, callback) {
+helpers.getTemplate = function(templateName, data, callback) {
   templateName = typeof(templateName) == 'string' && templateName.length > 0 ? templateName : false;
+  data = typeof(data) == 'object' && data !== null ? data : {};
 
   if (templateName) {
     const templatesDir = path.join(__dirname, '../../platform/templates/');
     fs.readFile(templatesDir + templateName + '.html', 'utf8', function(err, str) {
       if (!err && str && str.length > 0) {
-        callback(false, str);
+        // Do interpolation
+        const finalString = helpers.interpolate(str, data);
+        callback(false, finalString);
       } else {
         callback('No template could be found!');
       }
@@ -303,6 +306,56 @@ helpers.getTemplate = function(templateName, callback) {
   } else {
     callback('A valid template name was not specified');
   }
+}
+
+// Add the universal header and footer to a string, and pass provided data object to the header and footer for interpolation
+helpers.addUniversalTemplates = function(str, data, callback) {
+  str = typeof(str) === 'string' && str.length > 0 ? str : '';
+  data = typeof(data) == 'object' && data !== null ? data : {};
+
+  // Get the header
+  helpers.getTemplate('_header', data, function(err, headerString) {
+    if (!err && headerString) {
+      // Get the footer
+      helpers.getTemplate('_footer', data, function(err, footerString) {
+        if (!err && footerString) {
+          // Add them all together
+          const fullString = headerString + str + footerString;
+          callback(false, fullString);
+        } else {
+          callback('Could not find the footer template')
+        }
+      });
+    } else {
+      callback('Could not find the header template');
+    }
+  });
+}
+
+
+// Take a given string and a data object and find/replace all the keys within
+helpers.interpolate = function(str, data) {
+  str = typeof(str) === 'string' && str.length > 0 ? str : '';
+  data = typeof(data) == 'object' && data !== null ? data : {};
+  
+  // Add the template globals to the data object, preparing their key name with "global"
+  for (let keyName in config.templateGlobals) {
+    if (config.templateGlobals.hasOwnProperty(keyName)) {
+      data['global.'+keyName] = config.templateGlobals[keyName];
+    }
+  }
+
+  
+  // For each key in the data object, insert its value into the string at the coresponding placeholder
+  for (let key in data) {
+    if (data.hasOwnProperty(key) && typeof(data[key]) == 'string') {
+      let replace = data[key];
+      var find = `{${key}}`;
+      str = str.replace(find, replace);
+    }
+  }
+  
+  return str;
 }
 
 //Export the module

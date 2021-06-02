@@ -16,7 +16,13 @@ environments.staging = {
     'accountSid': 'ACb32d411ad7fe886aac54c665d25e5c5d',
     'authToken': '9455e3eb3109edc12e3d8c92768f7a67',
     'fromPhone': '+15005550006',
-  }
+  },
+  'templateGlobals': {
+    'appName': 'Pizzeria',
+    'companyName': 'Super Pizza',
+    'yearCreated': '2021',
+    'baseUrl': 'http://localhost:3000/',
+  },
 };
 
 // Production environment
@@ -30,7 +36,13 @@ environments.production = {
     'accountSid': '',
     'authToken': '',
     'fromPhone': '',
-  }
+  },
+  'templateGlobals': {
+    'appName': 'Pizzeria',
+    'companyName': 'Super Pizza',
+    'yearCreated': '2021',
+    'baseUrl': 'http://localhost:5000/',
+  },
 };
 
 // Determine which environment was passed as a command-line argument
